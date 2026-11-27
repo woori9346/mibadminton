@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -54,7 +55,7 @@ td.off{background:var(--off)}
 .chip.clash{outline:2px solid var(--warn)}
 .offtag{color:var(--muted);font-size:.8rem}
 .legend{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:1rem;color:var(--muted)}
-.legend .rule{padding:8px 18px;font-size:1.05rem;min-height:44px;display:inline-flex;align-items:center;cursor:pointer;border:2px solid transparent}
+.legend .rule{padding:5px 14px;font-size:.95rem;min-height:36px;display:inline-flex;align-items:center;cursor:pointer;border:2px solid transparent}
 .legend .rule[aria-pressed=true]{border-color:var(--ink)}
 .note{color:var(--muted);font-size:.82rem;margin-top:10px}
 #list{display:none}
@@ -63,13 +64,11 @@ td.off{background:var(--off)}
 .lhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .litem .offtag{margin:0}
 @media (max-width:700px){
-  .wrap{display:none}
-  #list{display:block}
   main{padding:14px 10px 40px}
   button,select,input[type=time],input[type=text]{min-height:46px;font-size:1rem}
   .days label{min-height:46px;padding:8px 14px;font-size:1rem}
   .days{flex-wrap:wrap}
-  .legend .rule{min-height:48px;padding:8px 20px;font-size:1.1rem}
+  .legend .rule{min-height:40px;padding:6px 16px;font-size:1rem}
   .rule{font-size:.95rem}
   .rule button{min-height:34px;min-width:34px}
   .chip{font-size:.95rem;padding:5px 8px}
