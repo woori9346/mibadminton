@@ -54,11 +54,29 @@ td.off{background:var(--off)}
 .chip b{font-weight:700}
 .chip.clash{outline:2px solid var(--warn)}
 .offtag{color:var(--muted);font-size:.8rem}
-.legend{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.82rem;color:var(--muted)}
-.legend .rule{padding:2px 10px;cursor:pointer;border:2px solid transparent}
+.legend{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:1rem;color:var(--muted)}
+.legend .rule{padding:8px 18px;font-size:1.05rem;min-height:44px;display:inline-flex;align-items:center;cursor:pointer;border:2px solid transparent}
 .legend .rule[aria-pressed=true]{border-color:var(--ink)}
 .note{color:var(--muted);font-size:.82rem;margin-top:10px}
-@media print{
+#list{display:none}
+.litem{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.litem.off{background:var(--off)}
+.lhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.litem .offtag{margin:0}
+@media (max-width:700px){
+  .wrap{display:none}
+  #list{display:block}
+  main{padding:14px 10px 40px}
+  button,select,input[type=time],input[type=text]{min-height:46px;font-size:1rem}
+  .days label{min-height:46px;padding:8px 14px;font-size:1rem}
+  .days{flex-wrap:wrap}
+  .legend .rule{min-height:48px;padding:8px 20px;font-size:1.1rem}
+  .rule{font-size:.95rem}
+  .rule button{min-height:34px;min-width:34px}
+  .chip{font-size:.95rem;padding:5px 8px}
+  .nav strong{font-size:1.1rem;min-width:6em}
+}
+@media print{#list{display:none!important}.wrap{display:block!important}
   body{background:#fff;color:#000}.panel,.noprint{display:none}main{padding:0}
   .wrap{border:none;overflow:visible}td{height:90px}
 }
@@ -72,15 +90,14 @@ td.off{background:var(--off)}
   <section class="panel noprint">
     <h2>운동 일정 추가</h2>
     <div class="row">
-      <label>학년
-        <select id="grade"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
-      </label>
+      <div><div style="font-size:.82rem;color:var(--muted);margin-bottom:4px">학년 (여러 개 선택 가능)</div><div class="days" id="grades"></div></div>
       <div>
         <div style="font-size:.82rem;color:var(--muted);margin-bottom:4px">요일 (여러 개 선택 가능)</div>
         <div class="days" id="days"></div>
       </div>
+      <label>적용 주차 <select id="week"><option value="0">매주</option><option value="1">1째주</option><option value="2">2째주</option><option value="3">3째주</option><option value="4">4째주</option><option value="5">5째주</option></select></label>
       <label>시작 시간 <span style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="useStart" checked aria-label="시작 시간 사용"><input type="time" id="start" value="09:00"></span></label>
-      <label>끝 <input type="time" id="end" value="09:40"></label>
+      <label>끝나는 시간 <span style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="useEnd" checked aria-label="끝나는 시간 사용"><input type="time" id="end" value="09:40"></span></label>
       <label>장소 <input type="text" id="place" placeholder="예: 체육관" style="width:150px"></label>
       <button class="primary" id="add">일정 추가</button>
     </div>
@@ -102,7 +119,8 @@ td.off{background:var(--off)}
   <div class="legend noprint" id="legend" style="margin-bottom:10px"></div>
 
   <div class="wrap"><table id="cal"></table></div>
-  <p class="note noprint">날짜 옆 ‘휴무’ 버튼을 누르면 그날(공휴일·행사 등)은 운동 일정에서 빠집니다. 같은 장소에서 시간이 겹치면 빨간 테두리로 표시됩니다. 입력한 내용은 이 브라우저에 저장됩니다.</p>
+  <div id="list"></div>
+  <p class="note noprint">‘적용 주차’를 고르면 그 주(예: 2째주 수요일)만 다르게 설정할 수 있고, 같은 학년·요일의 ‘매주’ 일정보다 우선 적용돼요. 날짜 옆 ‘휴무’ 버튼을 누르면 그날(공휴일·행사 등)은 운동 일정에서 빠집니다. 같은 장소에서 시간이 겹치면 빨간 테두리로 표시됩니다. 입력한 내용은 이 브라우저에 저장됩니다.</p>
 </main>
 
 <script>
@@ -124,26 +142,29 @@ td.off{background:var(--off)}
   function save(){try{localStorage.setItem(KEY,JSON.stringify({rules:state.rules,off:state.off}));}catch(e){}}
   var $=function(id){return document.getElementById(id)};
   function pad(n){return n<10?'0'+n:''+n}
-  function tr(r){return r.start?r.start+'–'+r.end:'~'+r.end}
+  function tr(r){return r.start&&r.end?r.start+'–'+r.end:r.start?r.start+'~':r.end?'~'+r.end:'시간 미정'}
   function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 
   // day checkboxes (Mon–Fri)
   $('days').innerHTML=[1,2,3,4,5,6,0].map(function(d){return '<label><input type="checkbox" value="'+d+'"><span>'+DAYS[d]+'</span></label>'}).join('');
 
   $('useStart').onchange=function(){$('start').disabled=!this.checked};
+  $('useEnd').onchange=function(){$('end').disabled=!this.checked};
+  $('grades').innerHTML=[1,2,3,4,5,6].map(function(g){return '<label><input type="checkbox" value="'+g+'"><span>'+g+'</span></label>'}).join('');
   $('add').onclick=function(){
     var days=[].slice.call(document.querySelectorAll('#days input:checked')).map(function(i){return +i.value});
-    var st=$('useStart').checked?$('start').value:'',en=$('end').value,pl=$('place').value.trim(),g=+$('grade').value;
+    var st=$('useStart').checked?$('start').value:'',en=$('useEnd').checked?$('end').value:'',pl=$('place').value.trim(),gs=[].slice.call(document.querySelectorAll('#grades input:checked')).map(function(i){return +i.value}),wk=+$('week').value;
+    if(!gs.length){return msg('학년을 하나 이상 선택해 주세요.')}
     if(!days.length){return msg('요일을 하나 이상 선택해 주세요.')}
-    if(!en){return msg('끝나는 시간을 입력해 주세요.')}
+    if($('useEnd').checked&&!en){return msg('끝나는 시간을 입력하거나, 체크를 해제해 주세요.')}
     if($('useStart').checked&&!st){return msg('시작 시간을 입력하거나, 체크를 해제해 주세요.')}
-    if(st&&en<=st){return msg('끝나는 시간은 시작 시간보다 늦어야 합니다.')}
+    if(st&&en&&en<=st){return msg('끝나는 시간은 시작 시간보다 늦어야 합니다.')}
     if(!pl){return msg('장소를 입력해 주세요.')}
-    days.forEach(function(d){
-      var dup=state.rules.some(function(r){return r.grade===g&&r.day===d&&r.start===st&&r.end===en&&r.place===pl});
-      if(!dup)state.rules.push({id:Date.now()+d,grade:g,day:d,start:st,end:en,place:pl});
+    days.forEach(function(d){gs.forEach(function(g){
+      var dup=state.rules.some(function(r){return r.grade===g&&r.day===d&&(r.week||0)===wk&&r.start===st&&r.end===en&&r.place===pl});
+      if(!dup)state.rules.push({id:Date.now()+d*10+g,grade:g,day:d,start:st,end:en,place:pl,week:wk});});
     });
-    msg(g+'학년 일정을 추가했어요.');
+    msg(gs.join('·')+'학년 일정을 추가했어요.');
     save();render();
   };
   function msg(t){$('msg').textContent=t}
@@ -155,9 +176,9 @@ td.off{background:var(--off)}
 
   function render(){
     // rule chips
-    var sorted=state.rules.slice().sort(function(a,b){return a.grade-b.grade||a.day-b.day||(a.start||a.end).localeCompare(b.start||b.end)});
+    var sorted=state.rules.slice().sort(function(a,b){return a.grade-b.grade||a.day-b.day||(a.week||0)-(b.week||0)||(a.start||a.end||'99').localeCompare(b.start||b.end||'99')});
     $('rules').innerHTML=sorted.length?sorted.map(function(r){
-      return '<span class="rule" style="--h:'+HUE[r.grade]+'">'+r.grade+'학년 · '+DAYS[r.day]+' '+tr(r)+' · '+esc(r.place)+
+      return '<span class="rule" style="--h:'+HUE[r.grade]+'">'+r.grade+'학년 · '+(r.week?r.week+'째주 ':'')+DAYS[r.day]+' '+tr(r)+' · '+esc(r.place)+
         '<button data-del="'+r.id+'" aria-label="삭제">×</button></span>';
     }).join(''):'<span class="note">아직 추가된 일정이 없습니다.</span>';
 
@@ -171,7 +192,7 @@ td.off{background:var(--off)}
     // calendar (Sun–Sat)
     var last=new Date(yr,mo+1,0).getDate();
     var html='<thead><tr>'+[0,1,2,3,4,5,6].map(function(d){return '<th>'+DAYS[d]+'</th>'}).join('')+'</tr></thead><tbody>';
-    var row=null,hasAny=false;
+    var row=null,hasAny=false,lhtml='';
     for(var d=1;d<=last;d++){
       var dt=new Date(yr,mo,d),wd=dt.getDay();
       if(row===null||wd===0){
@@ -180,14 +201,17 @@ td.off{background:var(--off)}
         for(var k=0;k<wd;k++)html+='<td class="empty"></td>'; // leading blanks for first week
       }
       var key=yr+'-'+pad(mo+1)+'-'+pad(d),off=!!state.off[key];
-      var items=state.rules.filter(function(r){return r.day===wd&&(!state.filter||r.grade===state.filter)})
-        .sort(function(a,b){return (a.start||a.end).localeCompare(b.start||b.end)||a.grade-b.grade});
+      var nth=Math.ceil(d/7);
+      var active=state.rules.filter(function(r){return r.day===wd&&(!r.week||r.week===nth)}).filter(function(r,i,arr){return r.week||!arr.some(function(o){return o.grade===r.grade&&o.week===nth})});
+      var items=active.filter(function(r){return !state.filter||r.grade===state.filter})
+        .sort(function(a,b){return (a.start||a.end||'99').localeCompare(b.start||b.end||'99')||a.grade-b.grade});
       var body='';
       if(off){body='<div class="offtag">휴무</div>'}
       else items.forEach(function(r){
-        var clash=state.rules.some(function(o){return o!==r&&o.day===wd&&o.place===r.place&&o.start&&r.start&&o.start<r.end&&r.start<o.end});
+        var clash=active.some(function(o){return o!==r&&o.place===r.place&&o.start&&r.start&&o.end&&r.end&&o.start<r.end&&r.start<o.end});
         body+='<div class="chip'+(clash?' clash':'')+'" style="--h:'+HUE[r.grade]+'"'+(clash?' title="같은 장소에서 시간이 겹칩니다"':'')+'><b>'+r.grade+'학년</b> '+tr(r)+'<br>'+esc(r.place)+'</div>';
       });
+      lhtml+='<div class="litem'+(off?' off':'')+'"><div class="lhead"><strong>'+(mo+1)+'월 '+d+'일 ('+DAYS[wd]+')</strong><button data-off="'+key+'">'+(off?'휴무 해제':'휴무')+'</button></div>'+(body||'<div class="offtag">일정 없음</div>')+'</div>';
       html+='<td class="'+(off?'off':'')+'"><div class="dnum"><span>'+d+'</span><button class="noprint" data-off="'+key+'">'+(off?'휴무 해제':'휴무')+'</button></div>'+body+'</td>';
     }
     if(row!==null){
@@ -198,6 +222,7 @@ td.off{background:var(--off)}
       html+='</tr>';
     }
     $('cal').innerHTML=html+'</tbody>';
+    $('list').innerHTML=lhtml;
   }
 
   document.addEventListener('click',function(e){
